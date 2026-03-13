@@ -4,7 +4,9 @@ import Home from '../pages/Home.vue';
 import Preview from '../pages/Preview.vue';
 
 const routes = [
-  { path: '/', name: 'Home', component: Home },
+  { path: '/', redirect: '/list' },
+  { path: '/list', name: 'List', component: Home },
+  { path: '/tree', name: 'Tree', component: Home },
   { path: '/preview', name: 'Preview', component: Preview, props: true },
 ];
 

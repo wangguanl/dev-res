@@ -72,14 +72,15 @@
 - `diskId` (path) - 硬盘 ID
 - `category` (query, optional) - 资源分类：`video` / `audio` / `pdf` / `other` / `all`（默认 `all`）
 - `folder` (query, optional) - 相对目录路径（例如 `电影/2024`），不允许 `..`
-- `page` (query, optional) - 分页页码，默认 1
-- `pageSize` (query, optional) - 每页数量，默认 50
+- `page` (query, optional) - 分页页码，默认 1（仅树状图模式使用）
+- `pageSize` (query, optional) - 每页数量，默认 50（仅树状图模式使用）
+- `mode` (query, optional) - 显示模式：`list` / `tree`（默认 `list`）
 
 #### 响应字段
-- `total`：总条数
-- `page`：当前页
-- `pageSize`：每页数量
-- `items`: 资源数组
+- `total`：总条数（直接子项数量）
+- `page`：当前页（列表模式固定为1）
+- `pageSize`：每页数量（列表模式为总直接子项数）
+- `items`: 资源数组（列表模式包含所有直接子项及其后代）
 
 #### 资源对象示例
 ```json

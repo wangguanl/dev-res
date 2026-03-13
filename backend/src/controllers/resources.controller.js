@@ -4,7 +4,7 @@ import { scanResources } from '../services/scan.service.js';
 
 export const getResources = asyncHandler(async (req, res) => {
   const { diskId } = req.params;
-  const { category = 'all', folder = '', page = 1, pageSize = 50 } = req.query;
+  const { category = 'all', folder = '', page = 1, pageSize = 50, mode = 'list' } = req.query;
 
   const disk = getDiskById(diskId);
   if (!disk) {
@@ -18,6 +18,7 @@ export const getResources = asyncHandler(async (req, res) => {
     folder,
     page: Number(page),
     pageSize: Number(pageSize),
+    mode,
   });
 
   res.json({

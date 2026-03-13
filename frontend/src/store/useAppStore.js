@@ -5,6 +5,8 @@ export const useAppStore = defineStore('app', {
     disks: [],
     currentDiskId: '',
     category: 'all',
+    currentFolder: '', // 当前文件夹路径，如 '视频/2024'
+    viewMode: 'list', // 'list' 或 'tree'
     resources: {
       total: 0,
       page: 1,
@@ -23,6 +25,10 @@ export const useAppStore = defineStore('app', {
     },
     setError(err) {
       this.error = err?.message || String(err);
+    },
+    setCurrentFolder(folder) {
+      this.currentFolder = folder;
+      this.resources.page = 1; // 重置分页
     },
   },
 });

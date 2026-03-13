@@ -1,41 +1,44 @@
 <template>
-  <div class="home">
-    <div class="controls">
-      <DiskSelector />
-      <el-radio-group v-model="category" size="small" class="category-group">
-        <el-radio-button label="all">全部</el-radio-button>
-        <el-radio-button label="video">视频</el-radio-button>
-        <el-radio-button label="audio">音频</el-radio-button>
-        <el-radio-button label="pdf">PDF</el-radio-button>
-        <el-radio-button label="other">其他</el-radio-button>
-      </el-radio-group>
-    </div>
+  <el-container style="height: calc(100vh - 56px);">
+    <el-header height="auto" style="padding: 10px; border-bottom: 1px solid #e4e7ed;">
+      <div class="header-controls">
+        <Breadcrumb v-if="viewMode === 'list'" />
+      </div>
+    </el-header>
 
-    <ErrorAlert :message="error" @closed="error = ''" />
+    <el-main style="padding: 16px;">
+      <ErrorAlert :message="error" @closed="error = ''" />
 
-    <el-skeleton v-if="loading" :rows="4" animated />
+      <el-skeleton v-if="loading" :rows="4" animated />
 
-    <ResourceGrid
-      v-else
-      :items="resources.items"
-      :total="resources.total"
-      :page="resources.page"
-      :pageSize="resources.pageSize"
-      :diskId="currentDiskId"
-      @update:page="onPageChange"
-    />
-  </div>
+      <ResourceGrid
+        v-else
+        :items="resources.items"
+        :total="resources.total"
+        :page="resources.page"
+        :pageSize="resources.pageSize"
+        :diskId="currentDiskId"
+        :viewMode="viewMode"
+        :currentFolder="currentFolder"
+        @update:page="onPageChange"
+      />
+    </el-main>
+  </el-container>
 </template>
 
 <script setup>
 import { watch, onMounted, ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useAppStore } from '../store/useAppStore';
 import { fetchDisks } from '../api/disks';
 import { fetchResources } from '../api/resources';
 
-import DiskSelector from '../components/DiskSelector.vue';
+import Breadcrumb from '../components/Breadcrumb.vue';
 import ResourceGrid from '../components/ResourceGrid.vue';
 import ErrorAlert from '../components/ErrorAlert.vue';
+
+const router = useRouter();
+const route = useRoute();
 
 const store = useAppStore();
 
@@ -48,8 +51,14 @@ const category = computed({
   get: () => store.category,
   set: (v) => (store.category = v),
 });
+const viewMode = computed(() => {
+  const name = route.name;
+  return name === 'Tree' ? 'tree' : 'list';
+});
 const resources = computed(() => store.resources);
 const loading = computed(() => store.loading);
+
+const currentFolder = computed(() => route.query.path || '');
 
 const error = ref('');
 
@@ -58,9 +67,7 @@ const loadDisks = async () => {
     store.loading = true;
     const res = await fetchDisks();
     store.setDisks(res.data || []);
-    if (store.currentDiskId) {
-      await loadResources();
-    }
+    // 移除这里的 loadResources 调用，让 watch 处理
   } catch (err) {
     error.value = err.message;
   } finally {
@@ -68,17 +75,18 @@ const loadDisks = async () => {
   }
 };
 
-const loadResources = async () => {
+const loadResources = async (folder) => {
   try {
     store.loading = true;
     const res = await fetchResources({
       diskId: store.currentDiskId,
       category: store.category,
+      folder: folder || '',
       page: store.resources.page,
       pageSize: store.resources.pageSize,
+      mode: viewMode.value === 'tree' ? 'tree' : 'list',
     });
 
-    // 只更新字段，避免替换整个对象导致 watch 触发循环
     store.resources.total = res.data.total;
     store.resources.items = res.data.items;
   } catch (err) {
@@ -93,11 +101,18 @@ const onPageChange = (val) => {
 };
 
 watch(
-  () => [store.currentDiskId, store.category, store.resources.page],
+  () => [store.currentDiskId, store.category, currentFolder.value, store.resources.page, route.name],
   () => {
     if (store.currentDiskId) {
-      loadResources();
+      loadResources(currentFolder.value);
     }
+  }
+);
+
+watch(
+  () => currentFolder.value,
+  (newPath) => {
+    store.setCurrentFolder(newPath || '');
   }
 );
 
@@ -107,19 +122,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.home {
-  width: 100%;
-}
-
-.controls {
+.header-controls {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.category-group {
-  margin-left: auto;
 }
 </style>
