@@ -1,28 +1,27 @@
 /**
  * Created by dream on 2017/5/2.
  */
+'use strict';
 //加载所需要的模块
-import http from 'http';
-import url from 'url';
-import fs from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
-
+var http = require('http');
+var url = require('url');
+var fs = require('fs');
+var path = require('path');
+var cp = require('child_process');
 console.log(__dirname);
 console.log(__filename);
 console.log(process.cwd());
 console.log(path.resolve('./'));
-
 //创建服务
-const httpServer = http.createServer(processRequest);
+var httpServer = http.createServer(processRequest);
 
-const port = 9998;
+var port = 9998;
 
 //指定一个监听的接口
 httpServer.listen(port, function () {
   console.log(`app is running at port:${port}`);
   console.log(`url: http://localhost:${port}`);
-  exec(`open http://localhost:${port}`, function () {});
+  cp.exec(`explorer http://localhost:${port}`, function () {});
 });
 
 //响应请求的函数
