@@ -40,14 +40,14 @@ const diskId = route.query.diskId || '';
 const path = route.query.path || '';
 const type = route.query.type || 'other';
 const name = route.query.name || '';
+const apiBaseURL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 const streamUrl = computed(() => {
   if (!diskId || !path) return '';
-  return `/api/files/stream?diskId=${encodeURIComponent(diskId)}&path=${encodeURIComponent(path)}`;
+  return `${apiBaseURL}/files/stream?diskId=${encodeURIComponent(diskId)}&path=${encodeURIComponent(path)}`;
 });
 
 const pdfUrl = computed(() => {
-  // 使用 google docs 预览也可，或直接点 iframe
   return streamUrl.value;
 });
 
