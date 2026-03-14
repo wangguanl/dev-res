@@ -22,6 +22,23 @@ const getCategoryByExt = (ext) => {
 
 const normalizeRelPath = (p) => p.replace(/\\/g, '/').replace(/^\//, '');
 
+const assertReadableDirectory = async (absPath) => {
+  try {
+    const stat = await fs.stat(absPath);
+    if (!stat.isDirectory()) {
+      const err = new Error('目录不存在或不可访问');
+      err.status = 400;
+      err.code = 1004;
+      throw err;
+    }
+  } catch {
+    const err = new Error('目录不存在或不可访问');
+    err.status = 400;
+    err.code = 1004;
+    throw err;
+  }
+};
+
 const buildResource = (diskId, relPath, stat, isDirectory) => {
   const ext = path.extname(relPath);
   const type = isDirectory ? 'folder' : getCategoryByExt(ext);
@@ -66,6 +83,9 @@ const scanDir = async (diskRoot, diskId, rel, depth, maxDepth, results) => {
 
 export async function scanResources({ diskId, diskRoot, category = 'all', folder = '', page = 1, pageSize = 50, mode = 'list' }) {
   const relRoot = normalizeRelPath(folder || '');
+  const absRoot = resolveDiskPath(diskRoot, relRoot);
+  await assertReadableDirectory(absRoot);
+
   const cacheKey = `scan:${diskId}:${diskRoot}:${category}:${relRoot}:${page}:${pageSize}:${mode}`;
   const cached = getCache(cacheKey);
   if (cached) return cached;
@@ -93,37 +113,38 @@ export async function scanResources({ diskId, diskRoot, category = 'all', folder
     return sub && !sub.includes('/');
   });
 
-  const total = directItems.length;
-  const start = (page - 1) * pageSize;
-  const pagedRoots = directItems.slice(start, start + pageSize);
-
-  // 列表模式：返回当前目录下的所有直接子项 + 它们的全部后代，保证文件夹可以包裹文件显示树状
+  // 列表模式：返回当前目录下的所有项（如果开启了分类过滤，则返回全量匹配项）
   let items = [];
   if (mode === 'tree') {
     items = filteredByFolder;
   } else {
-    // 列表模式不分页，返回所有直接子项及其后代
-    const rootPaths = new Set(directItems.map((item) => item.relativePath));
+    if (category !== 'all') {
+      // 如果开启了分类过滤，在列表模式下直接返回所有匹配项，由前端展示为扁平列表或自动构建树
+      items = filteredByFolder;
+    } else {
+      // 列表模式不分页，返回所有直接子项及其后代
+      const rootPaths = new Set(directItems.map((item) => item.relativePath));
 
-    // 包含每个根项本身
-    items.push(...directItems);
+      // 包含每个根项本身
+      items.push(...directItems);
 
-    // 包含根项下的所有后代
-    filteredByFolder.forEach((item) => {
-      if (item.relativePath === '' || rootPaths.has(item.relativePath)) return;
-      for (const root of rootPaths) {
-        if (item.relativePath.startsWith(`${root}/`)) {
-          items.push(item);
-          break;
+      // 包含根项下的所有后代
+      filteredByFolder.forEach((item) => {
+        if (item.relativePath === '' || rootPaths.has(item.relativePath)) return;
+        for (const root of rootPaths) {
+          if (item.relativePath.startsWith(`${root}/`)) {
+            items.push(item);
+            break;
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   const payload = {
-    total: mode === 'tree' ? filteredByFolder.length : directItems.length,
-    page: mode === 'tree' ? page : 1,
-    pageSize: mode === 'tree' ? pageSize : directItems.length,
+    total: (mode === 'tree' || category !== 'all') ? filteredByFolder.length : directItems.length,
+    page: (mode === 'tree' || category !== 'all') ? page : 1,
+    pageSize: (mode === 'tree' || category !== 'all') ? pageSize : filteredByFolder.length,
     items,
   };
 
