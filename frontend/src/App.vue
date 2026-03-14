@@ -4,9 +4,11 @@
       <div class="app-header">
         <div class="header-left">
           <span class="logo">NASUI 资源共享</span>
-          <span class="hint">局域网访问 + 视频/音频/PDF 预览</span>
+          <DiskSelector />
         </div>
-        <ViewModeSwitcher />
+        <div class="header-right">
+          <ViewModeSwitcher />
+        </div>
       </div>
     </el-header>
 
@@ -18,6 +20,7 @@
 
 <script setup>
 import ViewModeSwitcher from './components/ViewModeSwitcher.vue';
+import DiskSelector from './components/DiskSelector.vue';
 </script>
 
 <style scoped>

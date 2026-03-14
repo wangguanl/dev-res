@@ -11,9 +11,11 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAppStore } from '../store/useAppStore';
 
 const store = useAppStore();
+const router = useRouter();
 
 const value = computed({
   get: () => store.currentDiskId,
@@ -24,5 +26,7 @@ const disks = computed(() => store.disks);
 
 const onChange = () => {
   store.error = null;
+  // 切换硬盘时重置路径到根目录，防止新硬盘下不存在该路径
+  router.push({ path: '/' });
 };
 </script>
